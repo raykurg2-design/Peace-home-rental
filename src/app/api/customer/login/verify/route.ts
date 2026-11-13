@@ -7,6 +7,7 @@ import {
   sessionCookieOptions,
   toPublic,
 } from "@/lib/customer-auth";
+import { AUTH_LIMITS, authBucket, consumeRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,17 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Enter the 6-digit security code from your email." },
         { status: 400 },
+      );
+    }
+
+    const rate = await consumeRateLimit(
+      authBucket(request, "login-verify", challengeId),
+      AUTH_LIMITS.verify,
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Too many code attempts. Try again later." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
       );
     }
 

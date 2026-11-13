@@ -5,6 +5,7 @@ import {
   toPublic,
 } from "@/lib/customer-auth";
 import { sendVerificationEmail } from "@/lib/email";
+import { AUTH_LIMITS, authBucket, consumeRateLimit } from "@/lib/rate-limit";
 import { originFrom } from "@/lib/request-origin";
 
 export const runtime = "nodejs";
@@ -17,6 +18,17 @@ export async function POST(request: Request) {
     }
     if (customer.email_verified_at) {
       return NextResponse.json({ customer: toPublic(customer), email: { sent: false, alreadyVerified: true } });
+    }
+
+    const rate = await consumeRateLimit(
+      authBucket(request, "resend", customer.email),
+      AUTH_LIMITS.resend,
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Too many verification emails. Try again later." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
+      );
     }
 
     const token = await createEmailToken(customer.id, "email_verify");

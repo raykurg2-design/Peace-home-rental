@@ -10,6 +10,7 @@ import {
   toPublic,
 } from "@/lib/customer-auth";
 import { sendSecurityCodeEmail } from "@/lib/email";
+import { AUTH_LIMITS, authBucket, consumeRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,14 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Name, a valid email, and a password of at least 8 characters are required." },
         { status: 400 },
+      );
+    }
+
+    const rate = await consumeRateLimit(authBucket(request, "signup", email), AUTH_LIMITS.signup);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Too many signup attempts. Try again later." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
       );
     }
 
