@@ -9,8 +9,9 @@ import { OFFICE } from "@/lib/listings";
 
 const links = [
   { href: "/properties", label: "Homes" },
+  { href: "/favorites", label: "Saved" },
   { href: "/how-it-works", label: "How it works" },
-  { href: "/about", label: "About" },
+  { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
 ];
 

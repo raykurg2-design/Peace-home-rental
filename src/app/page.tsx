@@ -147,6 +147,34 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="bg-forest-deep py-16 text-paper sm:py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <h2 className="font-display text-4xl sm:text-5xl">Rent with confidence</h2>
+          <p className="mt-3 max-w-2xl text-paper/75">
+            Clear fees, fair screening, and a real office behind every listing.
+          </p>
+          <div className="mt-10 grid gap-6 sm:grid-cols-3">
+            <div>
+              <p className="font-display text-2xl">No surprise fees</p>
+              <p className="mt-2 text-sm text-paper/70">Rent, deposit, and application fee are shown before you apply.</p>
+            </div>
+            <div>
+              <p className="font-display text-2xl">Reply within a day</p>
+              <p className="mt-2 text-sm text-paper/70">Tour and application requests typically get a response the next business day.</p>
+            </div>
+            <div>
+              <p className="font-display text-2xl">Equal Housing</p>
+              <p className="mt-2 text-sm text-paper/70">
+                We welcome every qualified renter.{" "}
+                <Link href="/rental-policies" className="underline underline-offset-2 hover:text-paper">
+                  Read policies
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="border-y border-line bg-surface/80">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-14 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div className="max-w-xl">

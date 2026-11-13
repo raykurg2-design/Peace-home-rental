@@ -31,6 +31,21 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/faq" className="hover:text-paper">
+                FAQ
+              </Link>
+            </li>
+            <li>
+              <Link href="/rental-policies" className="hover:text-paper">
+                Rental policies
+              </Link>
+            </li>
+            <li>
+              <Link href="/favorites" className="hover:text-paper">
+                Saved homes
+              </Link>
+            </li>
+            <li>
               <Link href="/contact" className="hover:text-paper">
                 Contact
               </Link>

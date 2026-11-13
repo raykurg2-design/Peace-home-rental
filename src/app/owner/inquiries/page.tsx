@@ -34,6 +34,8 @@ export default function OwnerInquiriesPage() {
               <div>
                 <h2 className="font-display text-2xl text-ink">{i.name}</h2>
                 <p className="mt-1 text-sm text-ink-muted">
+                  <span className="font-medium text-forest capitalize">{i.kind ?? "apply"}</span>
+                  {" · "}
                   {i.listingTitle} · {new Date(i.createdAt).toLocaleString()} · {statusLabel(i.status)}
                 </p>
               </div>
