@@ -13,6 +13,7 @@ import {
 } from "@/lib/messages";
 import { originFrom } from "@/lib/request-origin";
 import { ownerNotifyEmail } from "@/lib/email";
+import { AUTH_LIMITS, consumeRateLimit, customerActionBucket } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -48,6 +49,17 @@ export async function POST(request: Request) {
     if (!customer) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
     if (!customer.email_verified_at) {
       return NextResponse.json({ error: "Verify your email before messaging." }, { status: 403 });
+    }
+
+    const rate = await consumeRateLimit(
+      customerActionBucket(customer.id, "messages"),
+      AUTH_LIMITS.messages,
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Too many messages. Try again later." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
+      );
     }
 
     const body = (await request.json()) as {

@@ -13,6 +13,7 @@ import {
 } from "@/lib/email";
 import { createThreadWithMessage } from "@/lib/messages";
 import { originFrom } from "@/lib/request-origin";
+import { AUTH_LIMITS, consumeRateLimit, customerActionBucket } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -34,6 +35,17 @@ export async function POST(request: Request) {
     if (!customer) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
     if (!customer.email_verified_at || !customer.profile_verified_at || !customer.policies_accepted_at) {
       return NextResponse.json({ error: "Complete customer verification first." }, { status: 403 });
+    }
+
+    const rate = await consumeRateLimit(
+      customerActionBucket(customer.id, "inquiries"),
+      AUTH_LIMITS.inquiries,
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Too many inquiries. Try again later." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
+      );
     }
 
     const body = (await request.json()) as {

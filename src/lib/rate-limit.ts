@@ -1,5 +1,5 @@
+import { createHash } from "node:crypto";
 import { sql } from "@/lib/db";
-import { requestFingerprint } from "@/lib/customer-auth";
 
 type LimitConfig = {
   /** Max allowed hits inside the window. */
@@ -10,15 +10,40 @@ type LimitConfig = {
 
 const DEFAULTS: LimitConfig = { limit: 10, windowMs: 15 * 60 * 1000 };
 
+function hashPart(value: string): string {
+  return createHash("sha256").update(value).digest("hex").slice(0, 16);
+}
+
+/** Client IP from proxy headers (hashed later — never stored plain). */
+function clientIp(headers: Headers): string {
+  const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
+  return (
+    forwarded ||
+    headers.get("x-real-ip")?.trim() ||
+    headers.get("cf-connecting-ip")?.trim() ||
+    headers.get("true-client-ip")?.trim() ||
+    ""
+  );
+}
+
+/** Cursor signed-in viewer header when present (private/team apps). */
+function cursorIdentity(headers: Headers): string {
+  return (
+    headers.get("x-cursor-identity-v2")?.trim() ||
+    headers.get("x-cursor-identity")?.trim() ||
+    ""
+  );
+}
+
 /**
- * Sliding fixed-window rate limit keyed by a bucket string (route + fingerprint + email).
- * Returns true when the request is allowed.
+ * Fixed-window rate limit keyed by a bucket string.
+ * Returns whether the request is allowed.
  */
 export async function consumeRateLimit(
   bucket: string,
   config: LimitConfig = DEFAULTS,
 ): Promise<{ allowed: boolean; retryAfterSec: number }> {
-  const key = bucket.slice(0, 200);
+  const key = bucket.slice(0, 240);
   const now = Date.now();
 
   const rows = await sql<{ hit_count: number; window_started_at: string }>(
@@ -54,10 +79,22 @@ export async function consumeRateLimit(
   return { allowed: true, retryAfterSec: 0 };
 }
 
+/**
+ * Auth bucket: IP + Cursor identity + User-Agent + route (+ optional email).
+ * Rotating only the User-Agent no longer resets the limit.
+ */
 export function authBucket(request: Request, route: string, email?: string): string {
-  const fp = requestFingerprint(request.headers);
+  const headers = request.headers;
+  const ip = hashPart(clientIp(headers) || "unknown-ip");
+  const identity = hashPart(cursorIdentity(headers) || "anon");
+  const ua = hashPart(headers.get("user-agent") ?? "");
   const mail = (email ?? "").trim().toLowerCase();
-  return `${route}:${fp}:${mail}`;
+  return `${route}:${ip}:${identity}:${ua}:${mail}`;
+}
+
+/** Per signed-in customer action bucket (messages, inquiries). */
+export function customerActionBucket(customerId: string, action: string): string {
+  return `customer:${action}:${customerId}`;
 }
 
 export const AUTH_LIMITS = {
@@ -66,4 +103,6 @@ export const AUTH_LIMITS = {
   verify: { limit: 20, windowMs: 15 * 60 * 1000 },
   resend: { limit: 5, windowMs: 60 * 60 * 1000 },
   apple: { limit: 10, windowMs: 15 * 60 * 1000 },
+  messages: { limit: 20, windowMs: 60 * 60 * 1000 },
+  inquiries: { limit: 10, windowMs: 60 * 60 * 1000 },
 } as const;

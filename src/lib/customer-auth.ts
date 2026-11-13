@@ -293,10 +293,23 @@ export function sessionCookieOptions(maxAge = 60 * 60 * 24 * SESSION_DAYS) {
   };
 }
 
-/** Opaque fingerprint for rate-ish checks without storing IPs in plain form. */
+/**
+ * Opaque fingerprint for rate checks (IP + Cursor identity + UA).
+ * Prefer authBucket() in rate-limit.ts for new call sites.
+ */
 export function requestFingerprint(headers: Headers): string {
+  const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
+  const ip =
+    forwarded ||
+    headers.get("x-real-ip")?.trim() ||
+    headers.get("cf-connecting-ip")?.trim() ||
+    "";
+  const identity =
+    headers.get("x-cursor-identity-v2")?.trim() ||
+    headers.get("x-cursor-identity")?.trim() ||
+    "";
   const ua = headers.get("user-agent") ?? "";
-  return createHash("sha256").update(ua).digest("hex").slice(0, 24);
+  return createHash("sha256").update(`${ip}|${identity}|${ua}`).digest("hex").slice(0, 24);
 }
 
 export function appleClientId(): string {
