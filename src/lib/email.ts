@@ -1,42 +1,46 @@
+import { Resend } from "resend";
 import { OFFICE } from "@/lib/listings";
 
-export type SendResult = { sent: boolean };
+export type SendResult = { sent: boolean; id?: string };
 
 type MailInput = {
   to: string;
   subject: string;
   html: string;
+  idempotencyKey: string;
 };
 
-async function sendMail(input: MailInput): Promise<SendResult> {
+function getResend(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY?.trim() ?? "";
-  const from =
-    process.env.RESEND_FROM_EMAIL?.trim() || "Peace Home Rental <onboarding@resend.dev>";
+  if (!apiKey) return null;
+  return new Resend(apiKey);
+}
 
-  if (!apiKey) {
+function fromAddress(): string {
+  return process.env.RESEND_FROM_EMAIL?.trim() || "Peace Home Rental <onboarding@resend.dev>";
+}
+
+async function sendMail(input: MailInput): Promise<SendResult> {
+  const resend = getResend();
+  if (!resend) {
     return { sent: false };
   }
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
+  const { data, error } = await resend.emails.send(
+    {
+      from: fromAddress(),
       to: [input.to],
       subject: input.subject,
       html: input.html,
-    }),
-  });
+    },
+    { idempotencyKey: input.idempotencyKey.slice(0, 256) },
+  );
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Email send failed (${res.status}): ${text.slice(0, 200)}`);
+  if (error) {
+    throw new Error(`Email send failed: ${error.message}`);
   }
 
-  return { sent: true };
+  return { sent: true, id: data?.id };
 }
 
 export function escapeHtml(value: string): string {
@@ -51,14 +55,20 @@ export function ownerNotifyEmail(): string {
   return process.env.OWNER_NOTIFY_EMAIL?.trim() || OFFICE.email;
 }
 
+export function isResendConfigured(): boolean {
+  return Boolean(process.env.RESEND_API_KEY?.trim());
+}
+
 export async function sendVerificationEmail(input: {
   to: string;
   name: string;
   verifyUrl: string;
+  idempotencyKey: string;
 }): Promise<SendResult> {
   return sendMail({
     to: input.to,
     subject: "Verify your Peace Home Rental email",
+    idempotencyKey: input.idempotencyKey,
     html: `
       <p>Hi ${escapeHtml(input.name)},</p>
       <p>Confirm your email to continue with ${escapeHtml(OFFICE.name)}.</p>
@@ -73,11 +83,13 @@ export async function sendSecurityCodeEmail(input: {
   name: string;
   code: string;
   purpose: "login" | "signup";
+  idempotencyKey: string;
 }): Promise<SendResult> {
   const label = input.purpose === "login" ? "sign-in" : "account verification";
   return sendMail({
     to: input.to,
     subject: `Your ${OFFICE.name} security code`,
+    idempotencyKey: input.idempotencyKey,
     html: `
       <p>Hi ${escapeHtml(input.name)},</p>
       <p>Your 6-digit security code for ${escapeHtml(label)} is:</p>
@@ -92,10 +104,12 @@ export async function sendWelcomeEmail(input: {
   to: string;
   name: string;
   accountUrl: string;
+  idempotencyKey: string;
 }): Promise<SendResult> {
   return sendMail({
     to: input.to,
     subject: `Welcome to ${OFFICE.name}`,
+    idempotencyKey: input.idempotencyKey,
     html: `
       <p>Hi ${escapeHtml(input.name)},</p>
       <p>Welcome to ${escapeHtml(OFFICE.name)}. Your email is confirmed.</p>
@@ -111,10 +125,12 @@ export async function sendVerifiedCustomerEmail(input: {
   to: string;
   name: string;
   homesUrl: string;
+  idempotencyKey: string;
 }): Promise<SendResult> {
   return sendMail({
     to: input.to,
     subject: "You're a verified Peace Home Rental customer",
+    idempotencyKey: input.idempotencyKey,
     html: `
       <p>Hi ${escapeHtml(input.name)},</p>
       <p>Your renter profile is verified. You can now request tours, start applications, and message the office about any home.</p>
@@ -130,11 +146,13 @@ export async function sendInquiryConfirmationEmail(input: {
   kind: string;
   listingTitle: string;
   message: string;
+  idempotencyKey: string;
 }): Promise<SendResult> {
   const label = input.kind === "tour" ? "tour request" : input.kind === "apply" ? "application interest" : "inquiry";
   return sendMail({
     to: input.to,
     subject: `We received your ${label}`,
+    idempotencyKey: input.idempotencyKey,
     html: `
       <p>Hi ${escapeHtml(input.name)},</p>
       <p>We received your ${escapeHtml(label)} for <strong>${escapeHtml(input.listingTitle)}</strong>.</p>
@@ -153,11 +171,13 @@ export async function sendOwnerInquiryNoticeEmail(input: {
   listingTitle: string;
   message: string;
   ownerUrl: string;
+  idempotencyKey: string;
 }): Promise<SendResult> {
   const label = input.kind === "tour" ? "Tour request" : input.kind === "apply" ? "Application interest" : "Inquiry";
   return sendMail({
     to: ownerNotifyEmail(),
     subject: `${label}: ${input.listingTitle}`,
+    idempotencyKey: input.idempotencyKey,
     html: `
       <p>${escapeHtml(label)} from ${escapeHtml(input.customerName)}.</p>
       <p>Home: <strong>${escapeHtml(input.listingTitle)}</strong></p>
@@ -175,10 +195,12 @@ export async function sendNewMessageEmail(input: {
   subject: string;
   body: string;
   threadUrl: string;
+  idempotencyKey: string;
 }): Promise<SendResult> {
   return sendMail({
     to: input.to,
     subject: `New message: ${input.subject}`,
+    idempotencyKey: input.idempotencyKey,
     html: `
       <p>Hi ${escapeHtml(input.recipientName)},</p>
       <p>${escapeHtml(input.senderName)} sent a message about <strong>${escapeHtml(input.subject)}</strong>.</p>

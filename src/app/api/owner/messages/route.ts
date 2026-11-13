@@ -81,6 +81,7 @@ export async function POST(request: Request) {
           subject: thread.subject,
           body: text,
           threadUrl: `${origin}/messages?thread=${thread.id}`,
+          idempotencyKey: `message-customer/${message.id}`,
         }),
       ]);
     }

@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       to: customer.email,
       name: customer.name,
       verifyUrl,
+      idempotencyKey: `email-verify/${token}`,
     });
 
     if (!mail.sent) {

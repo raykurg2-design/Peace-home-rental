@@ -41,6 +41,7 @@ export async function POST(request: Request) {
       name: row.name,
       code,
       purpose: "login",
+      idempotencyKey: `login-code/${challengeId}`,
     });
 
     if (!mail.sent) {

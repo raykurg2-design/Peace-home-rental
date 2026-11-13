@@ -33,6 +33,6 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Secrets (published app)
 
-Bind `RESEND_API_KEY` (and optionally `RESEND_FROM_EMAIL`, `OWNER_NOTIFY_EMAIL`) to send security codes and notices. Auth codes are never returned in API responses.
+Transactional email uses the **Resend** SDK (`RESEND_API_KEY`, optional `RESEND_FROM_EMAIL`, `OWNER_NOTIFY_EMAIL`) with idempotency keys. Auth codes are never returned in API responses.
 Bind `APPLE_CLIENT_ID` (Services ID) to enable Sign in with Apple. Without it, the Apple button stays unavailable.
 

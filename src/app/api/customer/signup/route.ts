@@ -60,6 +60,7 @@ export async function POST(request: Request) {
       name: customer.name,
       code,
       purpose: "signup",
+      idempotencyKey: `signup-code/${challengeId}`,
     });
 
     if (!mail.sent) {

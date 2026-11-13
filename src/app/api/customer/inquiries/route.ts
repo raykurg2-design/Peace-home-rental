@@ -93,6 +93,7 @@ export async function POST(request: Request) {
         kind,
         listingTitle,
         message,
+        idempotencyKey: `inquiry-confirm/${inquiry.id}`,
       }),
       sendOwnerInquiryNoticeEmail({
         customerName: customer.name,
@@ -102,6 +103,7 @@ export async function POST(request: Request) {
         listingTitle,
         message,
         ownerUrl: `${origin}/owner/inquiries`,
+        idempotencyKey: `inquiry-owner/${inquiry.id}`,
       }),
     ]);
 

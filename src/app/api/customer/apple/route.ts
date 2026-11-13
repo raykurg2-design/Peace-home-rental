@@ -83,6 +83,7 @@ export async function POST(request: Request) {
           to: customer.email,
           name: customer.name,
           accountUrl: `${origin}/account`,
+          idempotencyKey: `welcome-email/${customer.id}`,
         }),
         recordActivity({
           customerId: customer.id,
