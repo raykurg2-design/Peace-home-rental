@@ -46,6 +46,11 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/account" className="hover:text-paper">
+                Renter account
+              </Link>
+            </li>
+            <li>
               <Link href="/contact" className="hover:text-paper">
                 Contact
               </Link>

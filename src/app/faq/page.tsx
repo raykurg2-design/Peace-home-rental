@@ -10,11 +10,15 @@ export const metadata = {
 const faqs = [
   {
     q: "How do I schedule a showing?",
-    a: "Open any listing and choose Request a tour, or call the office. We confirm a time and meet you at the home.",
+    a: "Create a renter account, verify your email, add a phone number, and accept rental policies. Then open any listing and choose Request a tour, or call the office.",
+  },
+  {
+    q: "Why do I need email and customer verification?",
+    a: "We confirm your email and contact details before tours or applications so the office can follow up with the right person. Open Account in the menu to get verified.",
   },
   {
     q: "What does it cost to apply?",
-    a: "Each listing shows the application fee before you start. You are not charged until you confirm and submit.",
+    a: "Each listing shows the application fee before you start. You are not charged until you confirm and submit. You must be a verified customer to send an application interest request.",
   },
   {
     q: "What income and credit do you require?",

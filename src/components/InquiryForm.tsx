@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { OFFICE, type Listing } from "@/lib/listings";
 import { addInquiry, type InquiryKind } from "@/lib/owner-store";
+import { fetchCustomer, type CustomerPublic } from "@/lib/customer-client";
 
-export function InquiryForm({
+function InquiryFormInner({
   listing,
   kind,
   title,
@@ -20,24 +22,64 @@ export function InquiryForm({
   defaultMessage: string;
   submitLabel: string;
 }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const returnPath = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+
+  const [customer, setCustomer] = useState<CustomerPublic | null | undefined>(undefined);
   const [message, setMessage] = useState(defaultMessage);
   const [sent, setSent] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetchCustomer().then((c) => {
+      if (!cancelled) setCustomer(c);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!customer?.customerVerified) return;
     addInquiry({
       listingSlug: listing?.slug ?? "general",
       listingTitle: listing?.title ?? "General inquiry",
-      name: name.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone?.trim() ?? "",
       message: message.trim(),
       kind,
     });
     setSent(true);
+  }
+
+  if (customer === undefined) {
+    return (
+      <div className="rounded-2xl bg-surface p-6 outline outline-1 outline-line">
+        <p className="text-sm text-ink-muted">Checking verification…</p>
+      </div>
+    );
+  }
+
+  if (!customer?.customerVerified) {
+    const accountHref = `/account?next=${encodeURIComponent(returnPath)}`;
+    return (
+      <div className="rounded-2xl bg-surface p-6 outline outline-1 outline-line">
+        <h2 className="font-display text-3xl text-ink">{title}</h2>
+        <p className="mt-2 text-sm text-ink-muted">
+          Verified renters only. Create an account, confirm your email, add a phone number, and accept
+          rental policies before {kind === "tour" ? "requesting a tour" : "starting an application"}.
+        </p>
+        <Link
+          href={accountHref}
+          className="mt-5 inline-flex rounded-md bg-forest px-5 py-3 text-sm font-semibold text-paper hover:bg-forest-deep"
+        >
+          Verify my account
+        </Link>
+      </div>
+    );
   }
 
   if (sent) {
@@ -69,33 +111,14 @@ export function InquiryForm({
     <form onSubmit={onSubmit} className="space-y-4 rounded-2xl bg-surface p-6 outline outline-1 outline-line">
       <h2 className="font-display text-3xl text-ink">{title}</h2>
       <p className="text-sm text-ink-muted">{intro}</p>
-      <label className="block">
-        <span className="text-sm font-medium text-ink">Full name</span>
-        <input
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="mt-1.5 w-full rounded-lg bg-paper px-3 py-2.5 text-sm outline outline-1 outline-line"
-        />
-      </label>
-      <label className="block">
-        <span className="text-sm font-medium text-ink">Email</span>
-        <input
-          required
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mt-1.5 w-full rounded-lg bg-paper px-3 py-2.5 text-sm outline outline-1 outline-line"
-        />
-      </label>
-      <label className="block">
-        <span className="text-sm font-medium text-ink">Phone</span>
-        <input
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="mt-1.5 w-full rounded-lg bg-paper px-3 py-2.5 text-sm outline outline-1 outline-line"
-        />
-      </label>
+      <div className="rounded-lg bg-paper px-3 py-3 text-sm outline outline-1 outline-line">
+        <p className="font-medium text-ink">{customer.name}</p>
+        <p className="text-ink-muted">
+          {customer.email}
+          {customer.phone ? ` · ${customer.phone}` : ""}
+        </p>
+        <p className="mt-1 text-xs font-semibold tracking-wide text-action uppercase">Verified customer</p>
+      </div>
       <label className="block">
         <span className="text-sm font-medium text-ink">Message</span>
         <textarea
@@ -113,5 +136,26 @@ export function InquiryForm({
         {submitLabel}
       </button>
     </form>
+  );
+}
+
+export function InquiryForm(props: {
+  listing?: Listing;
+  kind: InquiryKind;
+  title: string;
+  intro: string;
+  defaultMessage: string;
+  submitLabel: string;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="rounded-2xl bg-surface p-6 outline outline-1 outline-line">
+          <p className="text-sm text-ink-muted">Loading form…</p>
+        </div>
+      }
+    >
+      <InquiryFormInner {...props} />
+    </Suspense>
   );
 }

@@ -4,13 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack --hostname 127.0.0.1 --port 3000",
-    "build": "next build",
+    "build": "next build && node scripts/migrate.mjs",
     "start": "next start --hostname 127.0.0.1 --port 3000",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.3.16",
     "lucide-react": "^1.72.0",
     "next": "^16.4.6",
+    "pg": "^8.23.1",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
@@ -18,6 +21,7 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
