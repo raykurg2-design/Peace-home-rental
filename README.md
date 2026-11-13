@@ -33,6 +33,18 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Secrets (published app)
 
-Bind `RESEND_API_KEY` (and optionally `RESEND_FROM_EMAIL`, `OWNER_NOTIFY_EMAIL`) for real emails. Without them, security codes show as a local preview code.
-Bind `APPLE_CLIENT_ID` (Services ID) for real Sign in with Apple. Without it, Apple uses a local sample path for development.
+Transactional email uses the **Resend** SDK (`RESEND_API_KEY`, optional `RESEND_FROM_EMAIL`, `OWNER_NOTIFY_EMAIL`) with idempotency keys. Auth codes are never returned in API responses.
+Recommended after domain DNS is verified: `RESEND_FROM_EMAIL=Peace Home Rental <noreply@peacehomerental.com>` and `OWNER_NOTIFY_EMAIL=contact@peacehomerental.com`.
+Bind `APPLE_CLIENT_ID` (Services ID) to enable Sign in with Apple. Without it, the Apple button stays unavailable.
+
+### Resend domain (`peacehomerental.com`)
+
+Add these DNS records, then verify in Resend:
+
+| Type | Name | Value |
+|------|------|--------|
+| TXT | `resend._domainkey` | `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDfVWxDYVR+LAvT2Pl9x6CvuwH/jv1btIvSDBj0hlM/o2Pa0MMv5E8C3J9+fO+cvqwPPbUGPEHdCF5MzZ0tJCAVwt35ddslNyvfeKCQpb7eiJOE3FfnqKxeHGLlGUiuZgvbm6qXac5ZBKI3+3YDgYnSHzPMUqPxxr1W/Nn3tLSx0wIDAQAB` |
+| MX | `send` | `feedback-smtp.us-east-1.amazonses.com` (priority 10) |
+| TXT | `send` | `v=spf1 include:amazonses.com ~all` |
+| CNAME | `rsend` | `send.forge.rmta.net` |
 

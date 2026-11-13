@@ -18,18 +18,24 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    if (!isAppleConfigured()) {
+      return NextResponse.json(
+        { error: "Apple Sign In is not configured for this app." },
+        { status: 503 },
+      );
+    }
+
     const body = (await request.json()) as {
       identityToken?: string;
       fullName?: string;
-      sample?: boolean;
-      sampleEmail?: string;
     };
 
-    const identity = await verifyAppleIdentityToken(body.identityToken ?? "", {
-      sampleMode: Boolean(body.sample) && !isAppleConfigured(),
-      sampleEmail: body.sampleEmail,
-      sampleName: body.fullName,
-    });
+    const identityToken = body.identityToken?.trim() ?? "";
+    if (!identityToken) {
+      return NextResponse.json({ error: "Apple identity token is required." }, { status: 400 });
+    }
+
+    const identity = await verifyAppleIdentityToken(identityToken);
 
     if (!identity.email) {
       return NextResponse.json(
@@ -77,6 +83,7 @@ export async function POST(request: Request) {
           to: customer.email,
           name: customer.name,
           accountUrl: `${origin}/account`,
+          idempotencyKey: `welcome-email/${customer.id}`,
         }),
         recordActivity({
           customerId: customer.id,
@@ -109,7 +116,6 @@ export async function POST(request: Request) {
     return res;
   } catch (error) {
     console.error("apple auth failed", error);
-    const msg = error instanceof Error ? error.message : "Apple Sign In failed.";
-    return NextResponse.json({ error: msg }, { status: 400 });
+    return NextResponse.json({ error: "Apple Sign In failed." }, { status: 400 });
   }
 }

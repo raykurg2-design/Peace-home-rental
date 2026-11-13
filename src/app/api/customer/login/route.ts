@@ -3,6 +3,7 @@ import { recordActivity } from "@/lib/activity";
 import {
   createLoginChallenge,
   findCustomerByEmail,
+  invalidateLoginChallenge,
   verifyPassword,
 } from "@/lib/customer-auth";
 import { sendSecurityCodeEmail } from "@/lib/email";
@@ -12,6 +13,7 @@ export const runtime = "nodejs";
 /**
  * Step 1 of email login: validate credentials and email a 6-digit security code.
  * Session is created only after /api/customer/login/verify.
+ * Security codes are never returned in the API response.
  */
 export async function POST(request: Request) {
   try {
@@ -39,7 +41,16 @@ export async function POST(request: Request) {
       name: row.name,
       code,
       purpose: "login",
+      idempotencyKey: `login-code/${challengeId}`,
     });
+
+    if (!mail.sent) {
+      await invalidateLoginChallenge(challengeId);
+      return NextResponse.json(
+        { error: "Email delivery is not configured. Security codes cannot be sent yet." },
+        { status: 503 },
+      );
+    }
 
     await recordActivity({
       customerId: row.id,
@@ -52,9 +63,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       challengeId,
       email: row.email,
-      codeSent: mail.sent,
-      // Local/sample only — never returned when Resend is configured.
-      previewCode: mail.sent ? null : code,
+      codeSent: true,
     });
   } catch (error) {
     console.error("login start failed", error);

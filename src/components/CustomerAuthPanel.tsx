@@ -20,7 +20,6 @@ export function CustomerAuthPanel({
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [challengeId, setChallengeId] = useState<string | null>(null);
-  const [previewCode, setPreviewCode] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
   const [acceptPolicies, setAcceptPolicies] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +42,6 @@ export function CustomerAuthPanel({
     e.preventDefault();
     setBusy(true);
     setError(null);
-    setPreviewCode(null);
     try {
       if (mode === "signup") {
         const res = await fetch("/api/customer/signup", {
@@ -56,7 +54,6 @@ export function CustomerAuthPanel({
           error?: string;
           customer?: CustomerPublic;
           challengeId?: string;
-          email?: { previewCode?: string | null };
         };
         if (!res.ok) {
           setError(data.error ?? "Could not create account.");
@@ -64,7 +61,6 @@ export function CustomerAuthPanel({
         }
         if (data.customer) setCustomer(data.customer);
         setChallengeId(data.challengeId ?? null);
-        setPreviewCode(data.email?.previewCode ?? null);
         return;
       }
 
@@ -77,14 +73,12 @@ export function CustomerAuthPanel({
       const data = (await res.json()) as {
         error?: string;
         challengeId?: string;
-        previewCode?: string | null;
       };
       if (!res.ok) {
         setError(data.error ?? "Could not start sign-in.");
         return;
       }
       setChallengeId(data.challengeId ?? null);
-      setPreviewCode(data.previewCode ?? null);
     } catch {
       setError("Network error. Try again.");
     } finally {
@@ -115,7 +109,6 @@ export function CustomerAuthPanel({
       }
       if (data.customer) setCustomer(data.customer);
       setChallengeId(null);
-      setPreviewCode(null);
       setCode("");
     } catch {
       setError("Network error. Try again.");
@@ -153,7 +146,6 @@ export function CustomerAuthPanel({
     await fetch("/api/customer/logout", { method: "POST", credentials: "same-origin" });
     setCustomer(null);
     setChallengeId(null);
-    setPreviewCode(null);
     setBusy(false);
   }
 
@@ -171,7 +163,6 @@ export function CustomerAuthPanel({
         email={customer.email}
         code={code}
         setCode={setCode}
-        previewCode={previewCode}
         error={error}
         busy={busy}
         onSubmit={verifyCode}
@@ -298,13 +289,11 @@ export function CustomerAuthPanel({
         email={email}
         code={code}
         setCode={setCode}
-        previewCode={previewCode}
         error={error}
         busy={busy}
         onSubmit={verifyCode}
         onCancel={() => {
           setChallengeId(null);
-          setPreviewCode(null);
           setCode("");
         }}
         title="Enter your security code"
@@ -406,7 +395,6 @@ function SecurityCodeForm({
   email,
   code,
   setCode,
-  previewCode,
   error,
   busy,
   onSubmit,
@@ -417,7 +405,6 @@ function SecurityCodeForm({
   email: string;
   code: string;
   setCode: (v: string) => void;
-  previewCode: string | null;
   error: string | null;
   busy: boolean;
   onSubmit: (e: FormEvent) => void;
@@ -429,12 +416,6 @@ function SecurityCodeForm({
     <form onSubmit={onSubmit} className="space-y-4 rounded-2xl bg-surface p-6 outline outline-1 outline-line">
       <h2 className="font-display text-3xl text-ink">{title}</h2>
       <p className="text-sm text-ink-muted">{intro}</p>
-      {previewCode ? (
-        <p className="rounded-lg bg-paper p-3 text-sm text-ink outline outline-1 outline-line">
-          Local preview code (email provider not configured):{" "}
-          <span className="font-semibold tracking-[0.2em]">{previewCode}</span>
-        </p>
-      ) : null}
       <label className="block">
         <span className="text-sm font-medium text-ink">6-digit code</span>
         <input

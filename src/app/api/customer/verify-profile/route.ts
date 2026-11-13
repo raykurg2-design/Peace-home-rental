@@ -51,6 +51,7 @@ export async function POST(request: Request) {
         to: updated.email,
         name: updated.name,
         homesUrl: `${origin}/properties`,
+        idempotencyKey: `verified-customer/${updated.id}`,
       }),
     ]);
 

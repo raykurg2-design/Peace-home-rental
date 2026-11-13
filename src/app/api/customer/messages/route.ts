@@ -90,6 +90,7 @@ export async function POST(request: Request) {
           subject: thread.subject,
           body: text,
           threadUrl: `${origin}/owner/messages?thread=${thread.id}`,
+          idempotencyKey: `message-owner/${message.id}`,
         }),
       ]);
       return NextResponse.json({ thread: toThreadPublic(thread), message: toMessagePublic(message) });
@@ -120,6 +121,7 @@ export async function POST(request: Request) {
         subject,
         body: text,
         threadUrl: `${origin}/owner/messages?thread=${thread.id}`,
+        idempotencyKey: `message-owner/${message.id}`,
       }),
     ]);
     return NextResponse.json({
