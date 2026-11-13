@@ -10,6 +10,7 @@ import { OFFICE } from "@/lib/listings";
 const links = [
   { href: "/properties", label: "Homes" },
   { href: "/favorites", label: "Saved" },
+  { href: "/messages", label: "Messages" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/faq", label: "FAQ" },
   { href: "/account", label: "Account" },

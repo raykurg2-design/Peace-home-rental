@@ -2,22 +2,47 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import {
-  loadInquiries,
-  loadOwnerListings,
-  statusLabel,
-  type Inquiry,
-  type OwnerListing,
-} from "@/lib/owner-store";
+import { ActivityFeed } from "@/components/ActivityFeed";
+import { loadOwnerListings, statusLabel, type OwnerListing } from "@/lib/owner-store";
 import { formatRent } from "@/lib/listings";
+
+type InquiryView = {
+  id: string;
+  listingTitle: string;
+  status: string;
+  customerName?: string;
+  createdAt: string;
+};
 
 export default function OwnerOverviewPage() {
   const [listings, setListings] = useState<OwnerListing[]>([]);
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [inquiries, setInquiries] = useState<InquiryView[]>([]);
+  const [threadCount, setThreadCount] = useState(0);
 
   useEffect(() => {
-    setListings(loadOwnerListings());
-    setInquiries(loadInquiries());
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (!cancelled) setListings(loadOwnerListings());
+    }, 0);
+    (async () => {
+      try {
+        const [inqRes, msgRes] = await Promise.all([
+          fetch("/api/owner/inquiries", { credentials: "same-origin" }),
+          fetch("/api/owner/messages", { credentials: "same-origin" }),
+        ]);
+        const inqData = (await inqRes.json()) as { inquiries?: InquiryView[] };
+        const msgData = (await msgRes.json()) as { threads?: unknown[] };
+        if (cancelled) return;
+        if (inqRes.ok) setInquiries(inqData.inquiries ?? []);
+        if (msgRes.ok) setThreadCount(msgData.threads?.length ?? 0);
+      } catch {
+        /* overview still shows listings */
+      }
+    })();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, []);
 
   const available = listings.filter((l) => l.status === "available").length;
@@ -29,7 +54,7 @@ export default function OwnerOverviewPage() {
         <div>
           <h1 className="font-display text-4xl text-ink">Owner overview</h1>
           <p className="mt-2 text-sm text-ink-muted">
-            Listings and inquiries stay here — separate from the customer browsing experience.
+            Listings, renter inquiries, messages, and office activity in one place.
           </p>
         </div>
         <Link
@@ -40,10 +65,11 @@ export default function OwnerOverviewPage() {
         </Link>
       </div>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Listings" value={String(listings.length)} />
         <Stat label="Available" value={String(available)} />
         <Stat label="Open inquiries" value={String(openInquiries)} />
+        <Stat label="Message threads" value={String(threadCount)} />
       </div>
 
       <section className="mt-10">
@@ -75,27 +101,39 @@ export default function OwnerOverviewPage() {
         </div>
       </section>
 
-      <section className="mt-10">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-2xl text-ink">Recent inquiries</h2>
-          <Link href="/owner/inquiries" className="text-sm font-medium text-forest hover:underline">
-            View all
-          </Link>
-        </div>
-        <div className="divide-y divide-line overflow-hidden rounded-xl bg-surface outline outline-1 outline-line">
-          {inquiries.slice(0, 5).map((i) => (
-            <div key={i.id} className="px-5 py-4">
-              <p className="font-medium text-ink">{i.name}</p>
-              <p className="text-sm text-ink-muted">
-                {i.listingTitle} · {statusLabel(i.status)}
+      <section className="mt-10 grid gap-8 lg:grid-cols-2">
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-2xl text-ink">Recent inquiries</h2>
+            <Link href="/owner/inquiries" className="text-sm font-medium text-forest hover:underline">
+              View all
+            </Link>
+          </div>
+          <div className="divide-y divide-line overflow-hidden rounded-xl bg-surface outline outline-1 outline-line">
+            {inquiries.slice(0, 5).map((i) => (
+              <div key={i.id} className="px-5 py-4">
+                <p className="font-medium text-ink">{i.customerName ?? "Renter"}</p>
+                <p className="text-sm text-ink-muted">
+                  {i.listingTitle} · {i.status}
+                </p>
+              </div>
+            ))}
+            {inquiries.length === 0 ? (
+              <p className="px-5 py-8 text-sm text-ink-muted">
+                No inquiries yet. Verified renters submit tours and applications from the customer site.
               </p>
-            </div>
-          ))}
-          {inquiries.length === 0 ? (
-            <p className="px-5 py-8 text-sm text-ink-muted">
-              No inquiries yet. When renters apply from the customer site, they appear here.
-            </p>
-          ) : null}
+            ) : null}
+          </div>
+        </div>
+
+        <div className="rounded-xl bg-surface p-5 outline outline-1 outline-line">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-display text-2xl text-ink">Office activity</h2>
+            <Link href="/owner/messages" className="text-sm font-medium text-forest hover:underline">
+              Messages
+            </Link>
+          </div>
+          <ActivityFeed endpoint="/api/owner/activity" emptyLabel="Activity will appear as renters engage." />
         </div>
       </section>
     </div>

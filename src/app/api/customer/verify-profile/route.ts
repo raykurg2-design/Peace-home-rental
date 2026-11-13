@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import { recordActivity } from "@/lib/activity";
 import {
   completeCustomerVerification,
   getCurrentCustomer,
   toPublic,
 } from "@/lib/customer-auth";
+import { sendVerifiedCustomerEmail } from "@/lib/email";
+import { originFrom } from "@/lib/request-origin";
 
 export const runtime = "nodejs";
 
@@ -33,6 +36,23 @@ export async function POST(request: Request) {
     if (!updated) {
       return NextResponse.json({ error: "Could not update profile." }, { status: 400 });
     }
+
+    await recordActivity({
+      customerId: updated.id,
+      actorRole: "customer",
+      kind: "customer_verified",
+      title: "Customer verification complete",
+      detail: phone,
+    });
+
+    const origin = originFrom(request);
+    await Promise.allSettled([
+      sendVerifiedCustomerEmail({
+        to: updated.email,
+        name: updated.name,
+        homesUrl: `${origin}/properties`,
+      }),
+    ]);
 
     return NextResponse.json({ customer: toPublic(updated) });
   } catch (error) {

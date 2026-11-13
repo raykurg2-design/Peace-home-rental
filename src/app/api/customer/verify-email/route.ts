@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { recordActivity } from "@/lib/activity";
 import {
   consumeEmailToken,
   createSession,
   SESSION_COOKIE,
   toPublic,
 } from "@/lib/customer-auth";
+import { sendWelcomeEmail } from "@/lib/email";
+import { originFrom } from "@/lib/request-origin";
 
 export const runtime = "nodejs";
 
@@ -20,6 +23,30 @@ export async function POST(request: Request) {
     if (!customer) {
       return NextResponse.json({ error: "This link is invalid or has expired." }, { status: 400 });
     }
+
+    await recordActivity({
+      customerId: customer.id,
+      actorRole: "system",
+      kind: "email_verified",
+      title: "Email verified",
+      detail: customer.email,
+    });
+
+    const origin = originFrom(request);
+    await Promise.allSettled([
+      sendWelcomeEmail({
+        to: customer.email,
+        name: customer.name,
+        accountUrl: `${origin}/account`,
+      }),
+      recordActivity({
+        customerId: customer.id,
+        actorRole: "system",
+        kind: "welcome_email",
+        title: "Welcome email sent",
+        detail: "Welcome to Peace Home Rental",
+      }),
+    ]);
 
     const sessionId = await createSession(customer.id);
     const res = NextResponse.json({ customer: toPublic(customer) });
