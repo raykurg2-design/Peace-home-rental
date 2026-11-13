@@ -33,9 +33,16 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Secrets (published app)
 
-Transactional email uses the **Resend** SDK (`RESEND_API_KEY`, optional `RESEND_FROM_EMAIL`, `OWNER_NOTIFY_EMAIL`) with idempotency keys. Auth codes are never returned in API responses.
-Recommended after domain DNS is verified: `RESEND_FROM_EMAIL=Peace Home Rental <noreply@peacehomerental.com>` and `OWNER_NOTIFY_EMAIL=contact@peacehomerental.com`.
-Bind `APPLE_CLIENT_ID` (Services ID) to enable Sign in with Apple. Without it, the Apple button stays unavailable.
+Set these four in Cursor’s secure Secrets form (Values never go in git):
+
+| Name | What to enter |
+|------|----------------|
+| `RESEND_API_KEY` | Resend sending API key (create in Resend → API Keys, permission **Sending access**) |
+| `RESEND_FROM_EMAIL` | Until DNS is verified: `Peace Home Rental <onboarding@resend.dev>`. After DNS: `Peace Home Rental <noreply@peacehomerental.com>` |
+| `OWNER_NOTIFY_EMAIL` | `contact@peacehomerental.com` |
+| `APPLE_CLIENT_ID` | Your Apple **Services ID** (Sign in with Apple). Leave unset until you have one — email OTP still works. |
+
+Auth codes are never returned in API responses. Without `RESEND_API_KEY`, login/signup OTP email is disabled.
 
 ### Resend domain (`peacehomerental.com`)
 
