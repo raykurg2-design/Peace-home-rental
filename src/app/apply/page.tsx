@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Shell } from "@/components/Shell";
-import { ApplyForm } from "@/app/apply/ApplyForm";
+import { InquiryForm } from "@/components/InquiryForm";
 import { getListing, OFFICE } from "@/lib/listings";
 
 type Props = {
@@ -45,13 +45,27 @@ export default async function ApplyPage({ searchParams }: Props) {
           </div>
         )}
 
-        <ApplyForm listing={listing} />
-
-        <div className="mt-6 flex flex-wrap gap-3 text-sm">
-          <a href={OFFICE.phoneHref} className="font-medium text-forest hover:underline">
-            Or call {OFFICE.phone}
-          </a>
+        <div className="mt-8">
+          <InquiryForm
+            listing={listing}
+            kind="apply"
+            title="Application interest"
+            intro="This goes to the office. The application fee is confirmed before you pay anything."
+            defaultMessage={
+              listing
+                ? `I would like to apply for ${listing.title} at ${listing.street}, ${listing.city}, ${listing.state}.`
+                : "I would like to start a rental application."
+            }
+            submitLabel="Send to office"
+          />
         </div>
+
+        <p className="mt-6 text-sm text-ink-muted">
+          Or call{" "}
+          <a href={OFFICE.phoneHref} className="font-medium text-forest hover:underline">
+            {OFFICE.phone}
+          </a>
+        </p>
       </section>
     </Shell>
   );

@@ -3,38 +3,49 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { OFFICE, type Listing } from "@/lib/listings";
-import { addInquiry } from "@/lib/owner-store";
+import { addInquiry, type InquiryKind } from "@/lib/owner-store";
 
-export function ApplyForm({ listing }: { listing?: Listing }) {
+export function InquiryForm({
+  listing,
+  kind,
+  title,
+  intro,
+  defaultMessage,
+  submitLabel,
+}: {
+  listing?: Listing;
+  kind: InquiryKind;
+  title: string;
+  intro: string;
+  defaultMessage: string;
+  submitLabel: string;
+}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [message, setMessage] = useState(
-    listing
-      ? `I would like to apply for ${listing.title} at ${listing.street}, ${listing.city}, ${listing.state}.`
-      : "I would like to start a rental application.",
-  );
+  const [message, setMessage] = useState(defaultMessage);
   const [sent, setSent] = useState(false);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     addInquiry({
       listingSlug: listing?.slug ?? "general",
-      listingTitle: listing?.title ?? "General application",
+      listingTitle: listing?.title ?? "General inquiry",
       name: name.trim(),
       email: email.trim(),
       phone: phone.trim(),
       message: message.trim(),
+      kind,
     });
     setSent(true);
   }
 
   if (sent) {
     return (
-      <div className="mt-8 rounded-2xl bg-surface p-6 outline outline-1 outline-line">
+      <div className="rounded-2xl bg-surface p-6 outline outline-1 outline-line">
         <h2 className="font-display text-3xl text-forest">Request received</h2>
         <p className="mt-2 text-ink-muted">
-          The office can see this in the owner workspace. You can also call or email directly.
+          The office will follow up. Typical response is within one business day.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <a
@@ -43,7 +54,10 @@ export function ApplyForm({ listing }: { listing?: Listing }) {
           >
             Call {OFFICE.phone}
           </a>
-          <Link href="/properties" className="rounded-md bg-paper px-5 py-3 text-sm font-semibold text-forest outline outline-1 outline-line">
+          <Link
+            href="/properties"
+            className="rounded-md bg-paper px-5 py-3 text-sm font-semibold text-forest outline outline-1 outline-line"
+          >
             Keep browsing
           </Link>
         </div>
@@ -52,11 +66,9 @@ export function ApplyForm({ listing }: { listing?: Listing }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 space-y-4 rounded-2xl bg-surface p-6 outline outline-1 outline-line">
-      <h2 className="font-display text-3xl text-ink">Application interest</h2>
-      <p className="text-sm text-ink-muted">
-        This goes to the owner workspace. The application fee is confirmed before you pay anything.
-      </p>
+    <form onSubmit={onSubmit} className="space-y-4 rounded-2xl bg-surface p-6 outline outline-1 outline-line">
+      <h2 className="font-display text-3xl text-ink">{title}</h2>
+      <p className="text-sm text-ink-muted">{intro}</p>
       <label className="block">
         <span className="text-sm font-medium text-ink">Full name</span>
         <input
@@ -98,7 +110,7 @@ export function ApplyForm({ listing }: { listing?: Listing }) {
         type="submit"
         className="rounded-md bg-forest px-5 py-3 text-sm font-semibold text-paper hover:bg-forest-deep"
       >
-        Send to office
+        {submitLabel}
       </button>
     </form>
   );

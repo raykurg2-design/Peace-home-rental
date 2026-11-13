@@ -10,6 +10,8 @@ export type OwnerListing = Listing & {
 
 export type InquiryStatus = "pending" | "contacted" | "closed";
 
+export type InquiryKind = "apply" | "tour" | "general";
+
 export type Inquiry = {
   id: string;
   listingSlug: string;
@@ -18,6 +20,7 @@ export type Inquiry = {
   email: string;
   phone: string;
   message: string;
+  kind: InquiryKind;
   status: InquiryStatus;
   createdAt: string;
 };
@@ -77,9 +80,12 @@ export function saveInquiries(next: Inquiry[]): void {
   window.localStorage.setItem(INQUIRIES_KEY, JSON.stringify(next));
 }
 
-export function addInquiry(input: Omit<Inquiry, "id" | "createdAt" | "status">): Inquiry {
+export function addInquiry(
+  input: Omit<Inquiry, "id" | "createdAt" | "status" | "kind"> & { kind?: InquiryKind },
+): Inquiry {
   const inquiry: Inquiry = {
     ...input,
+    kind: input.kind ?? "apply",
     id: `inq_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     status: "pending",
     createdAt: new Date().toISOString(),

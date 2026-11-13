@@ -109,6 +109,28 @@ export function featuredListings(limit = 6): Listing[] {
   return [...listings].sort((a, b) => b.rent - a.rent).slice(0, limit);
 }
 
+export function relatedListings(listing: Listing, limit = 3): Listing[] {
+  return listings
+    .filter((l) => l.slug !== listing.slug)
+    .map((l) => {
+      let score = 0;
+      if (l.city === listing.city) score += 3;
+      if (l.state === listing.state) score += 1;
+      if (l.beds != null && listing.beds != null && l.beds === listing.beds) score += 2;
+      const rentDelta = Math.abs(l.rent - listing.rent);
+      score += Math.max(0, 2 - rentDelta / 1000);
+      return { l, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((x) => x.l);
+}
+
+export function mapsUrl(listing: Listing): string {
+  const q = encodeURIComponent(`${listing.street}, ${listing.city}, ${listing.state} ${listing.zip ?? ""}`);
+  return `https://www.google.com/maps/search/?api=1&query=${q}`;
+}
+
 export function stats() {
   const rents = listings.map((l) => l.rent);
   return {
