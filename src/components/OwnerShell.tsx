@@ -11,6 +11,7 @@ const links = [
   { href: "/owner", label: "Overview", exact: true },
   { href: "/owner/listings", label: "Listings" },
   { href: "/owner/inquiries", label: "Inquiries" },
+  { href: "/owner/messages", label: "Messages" },
   { href: "/owner/listings/new", label: "Add listing" },
 ];
 

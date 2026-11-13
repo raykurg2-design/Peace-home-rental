@@ -312,14 +312,21 @@ export function AccountPanel({
         {customer.phone ? ` · ${customer.phone}` : ""}
       </p>
       <p className="text-sm text-ink">
-        Email and customer verification are complete. You can request tours and start applications.
+        Email and customer verification are complete. You can request tours, start applications, and
+        message the office.
       </p>
       <div className="flex flex-wrap gap-3">
         <Link
-          href={nextHref}
+          href={nextHref === "/account" ? "/messages" : nextHref}
           className="rounded-md bg-forest px-5 py-3 text-sm font-semibold text-paper hover:bg-forest-deep"
         >
-          Continue
+          {nextHref === "/account" ? "Message the office" : "Continue"}
+        </Link>
+        <Link
+          href="/properties"
+          className="rounded-md bg-paper px-5 py-3 text-sm font-semibold text-forest outline outline-1 outline-line"
+        >
+          Browse homes
         </Link>
         <button
           type="button"

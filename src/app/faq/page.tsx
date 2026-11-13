@@ -17,6 +17,10 @@ const faqs = [
     a: "We confirm your email and contact details before tours or applications so the office can follow up with the right person. Open Account in the menu to get verified.",
   },
   {
+    q: "Can I message the office in the app?",
+    a: "Yes. After your email is verified, open Messages to start a conversation. Tour and application requests also open a thread so you can follow up with the office.",
+  },
+  {
     q: "What does it cost to apply?",
     a: "Each listing shows the application fee before you start. You are not charged until you confirm and submit. You must be a verified customer to send an application interest request.",
   },

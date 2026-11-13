@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordActivity } from "@/lib/activity";
 import {
   createCustomer,
   createEmailToken,
@@ -7,14 +8,9 @@ import {
   toPublic,
 } from "@/lib/customer-auth";
 import { sendVerificationEmail } from "@/lib/email";
+import { originFrom } from "@/lib/request-origin";
 
 export const runtime = "nodejs";
-
-function originFrom(request: Request): string {
-  const proto = request.headers.get("x-forwarded-proto") ?? "http";
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "127.0.0.1:3000";
-  return `${proto}://${host}`;
-}
 
 export async function POST(request: Request) {
   try {
@@ -44,6 +40,14 @@ export async function POST(request: Request) {
       }
       throw error;
     }
+
+    await recordActivity({
+      customerId: customer.id,
+      actorRole: "customer",
+      kind: "account_created",
+      title: "Account created",
+      detail: customer.email,
+    });
 
     const token = await createEmailToken(customer.id, "email_verify");
     const verifyUrl = `${originFrom(request)}/account/verify?token=${token}`;
