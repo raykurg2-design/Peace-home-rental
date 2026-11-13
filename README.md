@@ -41,9 +41,8 @@ Set these four in Cursor’s secure Secrets form (Values never go in git):
 | `RESEND_FROM_EMAIL` | Until DNS is verified: `Peace Home Rental <onboarding@resend.dev>`. After DNS: `Peace Home Rental <noreply@peacehomerental.com>` |
 | `OWNER_NOTIFY_EMAIL` | `contact@peacehomerental.com` |
 | `APPLE_CLIENT_ID` | Your Apple **Services ID** (Sign in with Apple). Leave unset until you have one — email OTP still works. |
-| `APP_ORIGIN` | Canonical site URL for email links (e.g. `https://your-app.cursor.app`). Prevents Host-header spoofing of verification links. |
 
-Auth codes are never returned in API responses. Without `RESEND_API_KEY`, login/signup OTP email is disabled. Apple Sign In requires Apple’s `email_verified` claim. Login/signup endpoints are rate-limited.
+Email links default to `https://peacehomerental.com` (override with optional `APP_ORIGIN` only if you need a different host). Auth codes are never returned in API responses. Without `RESEND_API_KEY`, login/signup OTP email is disabled. Apple Sign In requires Apple’s `email_verified` claim. Login/signup endpoints are rate-limited.
 
 ### Resend domain (`peacehomerental.com`)
 
