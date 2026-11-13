@@ -55,9 +55,14 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-white/10">
-        <p className="mx-auto max-w-6xl px-4 py-4 text-xs text-paper/50 sm:px-6">
-          © {new Date().getFullYear()} {OFFICE.name}. Homes managed with care.
-        </p>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 text-xs text-paper/50 sm:px-6">
+          <p>
+            © {new Date().getFullYear()} {OFFICE.name}. Homes managed with care.
+          </p>
+          <Link href="/owner/login" className="text-paper/40 hover:text-paper/70">
+            Owner workspace
+          </Link>
+        </div>
       </div>
     </footer>
   );

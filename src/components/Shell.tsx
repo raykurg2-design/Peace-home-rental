@@ -2,6 +2,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
+/** Customer-facing site chrome. Owner tools live under `/owner` with a separate shell. */
 export function Shell({
   children,
   overlayHeader = false,

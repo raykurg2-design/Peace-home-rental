@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Shell } from "@/components/Shell";
+import { ApplyForm } from "@/app/apply/ApplyForm";
 import { getListing, OFFICE } from "@/lib/listings";
 
 type Props = {
@@ -15,20 +16,13 @@ export default async function ApplyPage({ searchParams }: Props) {
   const { home } = await searchParams;
   const listing = home ? getListing(home) : undefined;
 
-  const subject = listing
-    ? `Application interest: ${listing.title}`
-    : "Application interest — Peace Home Rental";
-  const body = listing
-    ? `Hello Peace Home Rental,\n\nI would like to apply for ${listing.title} at ${listing.street}, ${listing.city}, ${listing.state}.\n\nPlease send the application link and next steps.\n\nThank you.`
-    : `Hello Peace Home Rental,\n\nI would like to start a rental application. Please send the next steps.\n\nThank you.`;
-
   return (
     <Shell>
       <section className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
         <p className="text-xs font-semibold tracking-[0.2em] text-action uppercase">Apply</p>
         <h1 className="mt-3 font-display text-5xl text-ink">Apply from your phone</h1>
         <p className="mt-4 text-lg text-ink-muted">
-          Tell us which home you want. We reply with the application and the fee before you pay anything.
+          Tell us which home you want. The office replies with the application and fee before you pay anything.
         </p>
 
         {listing ? (
@@ -51,18 +45,11 @@ export default async function ApplyPage({ searchParams }: Props) {
           </div>
         )}
 
-        <div className="mt-8 flex flex-wrap gap-3">
-          <a
-            href={`${OFFICE.emailHref}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`}
-            className="rounded-md bg-forest px-5 py-3 text-sm font-semibold text-paper hover:bg-forest-deep"
-          >
-            Email to start application
-          </a>
-          <a
-            href={OFFICE.phoneHref}
-            className="rounded-md bg-paper px-5 py-3 text-sm font-semibold text-forest outline outline-1 outline-line hover:bg-surface"
-          >
-            Call {OFFICE.phone}
+        <ApplyForm listing={listing} />
+
+        <div className="mt-6 flex flex-wrap gap-3 text-sm">
+          <a href={OFFICE.phoneHref} className="font-medium text-forest hover:underline">
+            Or call {OFFICE.phone}
           </a>
         </div>
       </section>
