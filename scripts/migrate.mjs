@@ -10,19 +10,41 @@ if (url === "" || files.length === 0) {
   process.exit(0);
 }
 
-const connectionString = process.env.DATABASE_URL_UNPOOLED?.trim() || url;
+const rawConnectionString = process.env.DATABASE_URL_UNPOOLED?.trim() || url;
 
-function needsSsl(connectionUrl) {
+/**
+ * pg's URL parser turns sslmode=require into ssl:true (strict certs).
+ * Strip sslmode and set ssl ourselves so hosted DBs with custom CAs work.
+ */
+function connectionOptions(connectionUrl) {
+  let parsed;
   try {
-    const parsed = new URL(connectionUrl);
-    const host = parsed.hostname;
-    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return false;
-    const mode = (parsed.searchParams.get("sslmode") || "").toLowerCase();
-    if (mode === "disable") return false;
-    return true;
+    parsed = new URL(connectionUrl);
   } catch {
-    return true;
+    return {
+      connectionString: connectionUrl,
+      ssl: { rejectUnauthorized: false },
+    };
   }
+
+  const host = parsed.hostname;
+  const local = host === "localhost" || host === "127.0.0.1" || host === "::1";
+  const mode = (parsed.searchParams.get("sslmode") || "").toLowerCase();
+  const wantsSsl =
+    mode === "require" ||
+    mode === "verify-ca" ||
+    mode === "verify-full" ||
+    mode === "prefer" ||
+    (!local && mode !== "disable");
+
+  parsed.searchParams.delete("sslmode");
+  parsed.searchParams.delete("ssl");
+
+  return {
+    connectionString: parsed.toString(),
+    ssl: wantsSsl ? { rejectUnauthorized: false } : false,
+    connectionTimeoutMillis: 15_000,
+  };
 }
 
 function sleep(ms) {
@@ -30,14 +52,10 @@ function sleep(ms) {
 }
 
 async function connectWithRetry(maxAttempts = 6) {
+  const options = connectionOptions(rawConnectionString);
   let lastError;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const client = new pg.Client({
-      connectionString,
-      // Hosted Postgres (Neon/Cursor/etc.) often presents a cert Node doesn't trust by default.
-      ...(needsSsl(connectionString) ? { ssl: { rejectUnauthorized: false } } : {}),
-      connectionTimeoutMillis: 15_000,
-    });
+    const client = new pg.Client(options);
     try {
       await client.connect();
       if (attempt > 1) console.log(`migrate: connected on attempt ${attempt}`);
@@ -67,7 +85,6 @@ try {
     await client.query("select pg_advisory_lock(7272741)");
     locked = true;
   } catch (error) {
-    // Transaction poolers may reject advisory locks; continue without a session lock.
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`migrate: advisory lock unavailable, continuing: ${message}`);
   }
