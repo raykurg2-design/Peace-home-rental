@@ -13,6 +13,8 @@ const links = [
   { href: "/messages", label: "Messages" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/faq", label: "FAQ" },
+  { href: "/login", label: "Log in" },
+  { href: "/signup", label: "Create account" },
   { href: "/account", label: "Account" },
   { href: "/contact", label: "Contact" },
 ];

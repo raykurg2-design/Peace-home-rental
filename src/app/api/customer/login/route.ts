@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
+import { recordActivity } from "@/lib/activity";
 import {
-  createSession,
+  createLoginChallenge,
   findCustomerByEmail,
-  SESSION_COOKIE,
-  toPublic,
   verifyPassword,
 } from "@/lib/customer-auth";
+import { sendSecurityCodeEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
+/**
+ * Step 1 of email login: validate credentials and email a 6-digit security code.
+ * Session is created only after /api/customer/login/verify.
+ */
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as { email?: string; password?: string };
@@ -22,19 +26,38 @@ export async function POST(request: Request) {
     if (!row || !(await verifyPassword(password, row.password_hash))) {
       return NextResponse.json({ error: "Incorrect email or password." }, { status: 401 });
     }
+    if (!row.password_hash) {
+      return NextResponse.json(
+        { error: "This account uses Apple Sign In. Continue with Apple instead." },
+        { status: 400 },
+      );
+    }
 
-    const sessionId = await createSession(row.id);
-    const res = NextResponse.json({ customer: toPublic(row) });
-    res.cookies.set(SESSION_COOKIE, sessionId, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
+    const { challengeId, code } = await createLoginChallenge(row.id, "login");
+    const mail = await sendSecurityCodeEmail({
+      to: row.email,
+      name: row.name,
+      code,
+      purpose: "login",
     });
-    return res;
+
+    await recordActivity({
+      customerId: row.id,
+      actorRole: "system",
+      kind: "login_code_sent",
+      title: "Login security code sent",
+      detail: row.email,
+    });
+
+    return NextResponse.json({
+      challengeId,
+      email: row.email,
+      codeSent: mail.sent,
+      // Local/sample only — never returned when Resend is configured.
+      previewCode: mail.sent ? null : code,
+    });
   } catch (error) {
-    console.error("login failed", error);
-    return NextResponse.json({ error: "Could not sign in." }, { status: 500 });
+    console.error("login start failed", error);
+    return NextResponse.json({ error: "Could not start sign-in." }, { status: 500 });
   }
 }

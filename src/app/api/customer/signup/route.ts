@@ -2,16 +2,19 @@ import { NextResponse } from "next/server";
 import { recordActivity } from "@/lib/activity";
 import {
   createCustomer,
-  createEmailToken,
+  createLoginChallenge,
   createSession,
   SESSION_COOKIE,
+  sessionCookieOptions,
   toPublic,
 } from "@/lib/customer-auth";
-import { sendVerificationEmail } from "@/lib/email";
-import { originFrom } from "@/lib/request-origin";
+import { sendSecurityCodeEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
+/**
+ * Create account, then require a 6-digit email security code before the email is verified.
+ */
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
@@ -49,25 +52,24 @@ export async function POST(request: Request) {
       detail: customer.email,
     });
 
-    const token = await createEmailToken(customer.id, "email_verify");
-    const verifyUrl = `${originFrom(request)}/account/verify?token=${token}`;
-    const mail = await sendVerificationEmail({ to: customer.email, name: customer.name, verifyUrl });
+    const { challengeId, code } = await createLoginChallenge(customer.id, "signup");
+    const mail = await sendSecurityCodeEmail({
+      to: customer.email,
+      name: customer.name,
+      code,
+      purpose: "signup",
+    });
 
     const sessionId = await createSession(customer.id);
     const res = NextResponse.json({
       customer: toPublic(customer),
+      challengeId,
       email: {
         sent: mail.sent,
-        previewUrl: mail.previewUrl ?? null,
+        previewCode: mail.sent ? null : code,
       },
     });
-    res.cookies.set(SESSION_COOKIE, sessionId, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-    });
+    res.cookies.set(SESSION_COOKIE, sessionId, sessionCookieOptions());
     return res;
   } catch (error) {
     console.error("signup failed", error);

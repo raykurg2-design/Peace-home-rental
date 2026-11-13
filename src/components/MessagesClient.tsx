@@ -33,10 +33,10 @@ export function MessagesClient({ mode }: { mode: "customer" | "owner" }) {
         <div className="rounded-2xl bg-surface p-6 outline outline-1 outline-line">
           <p className="text-sm text-ink-muted">Sign in to message the office.</p>
           <Link
-            href="/account?next=/messages"
+            href="/login?next=/messages"
             className="mt-4 inline-flex rounded-md bg-forest px-5 py-3 text-sm font-semibold text-paper hover:bg-forest-deep"
           >
-            Go to account
+            Log in
           </Link>
         </div>
       );

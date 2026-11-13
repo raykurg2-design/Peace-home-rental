@@ -21,7 +21,8 @@ Open [http://localhost:3000](http://localhost:3000).
 ## App features
 
 - **Customer site** (`/`): home, listings search, property detail, favorites, tour requests, FAQ, policies, apply
-- **Renter accounts** (`/account`): email verification + customer verification (phone + policies); tours and applications require a verified customer
+- **Renter accounts** (`/login`, `/signup`, `/account`): email login requires password + 6-digit email security code; Apple Sign In; create account; customer verification (phone + policies)
+- Tours and applications require a verified customer
 - **Messaging** (`/messages` and `/owner/messages`): customers message the office; owners reply; inquiries open a thread
 - **Activity**: account, verification, inquiry, and message events on the account page and owner overview
 - **Transactional email**: verification, welcome (after email confirm), verified-customer, inquiry confirmations, and new-message notices
@@ -32,5 +33,6 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Secrets (published app)
 
-Bind `RESEND_API_KEY` (and optionally `RESEND_FROM_EMAIL`, `OWNER_NOTIFY_EMAIL`) for real emails. Without them, signup shows a local preview verification link; other mail is skipped with sample/local behavior.
+Bind `RESEND_API_KEY` (and optionally `RESEND_FROM_EMAIL`, `OWNER_NOTIFY_EMAIL`) for real emails. Without them, security codes show as a local preview code.
+Bind `APPLE_CLIENT_ID` (Services ID) for real Sign in with Apple. Without it, Apple uses a local sample path for development.
 
