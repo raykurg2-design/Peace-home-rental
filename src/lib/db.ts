@@ -6,17 +6,37 @@ const databaseUrl = process.env.DATABASE_URL?.trim() ?? "";
 let pool: pg.Pool | undefined;
 let local: Promise<PGlite> | undefined;
 
-function poolSslOption(connectionUrl: string): false | { rejectUnauthorized: false } {
+/** Match scripts/migrate.mjs: strip sslmode so pg does not force strict cert checks. */
+function poolConfig(connectionUrl: string): pg.PoolConfig {
+  let parsed: URL;
   try {
-    const parsed = new URL(connectionUrl);
-    const host = parsed.hostname;
-    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return false;
-    const mode = (parsed.searchParams.get("sslmode") || "").toLowerCase();
-    if (mode === "disable") return false;
-    return { rejectUnauthorized: false };
+    parsed = new URL(connectionUrl);
   } catch {
-    return { rejectUnauthorized: false };
+    return {
+      connectionString: connectionUrl,
+      max: 5,
+      ssl: { rejectUnauthorized: false },
+    };
   }
+
+  const host = parsed.hostname;
+  const localHost = host === "localhost" || host === "127.0.0.1" || host === "::1";
+  const mode = (parsed.searchParams.get("sslmode") || "").toLowerCase();
+  const wantsSsl =
+    mode === "require" ||
+    mode === "verify-ca" ||
+    mode === "verify-full" ||
+    mode === "prefer" ||
+    (!localHost && mode !== "disable");
+
+  parsed.searchParams.delete("sslmode");
+  parsed.searchParams.delete("ssl");
+
+  return {
+    connectionString: parsed.toString(),
+    max: 5,
+    ssl: wantsSsl ? { rejectUnauthorized: false } : false,
+  };
 }
 
 export async function sql<T = Record<string, unknown>>(
@@ -24,11 +44,7 @@ export async function sql<T = Record<string, unknown>>(
   params: unknown[] = [],
 ): Promise<T[]> {
   if (databaseUrl !== "") {
-    pool ??= new pg.Pool({
-      connectionString: databaseUrl,
-      max: 5,
-      ssl: poolSslOption(databaseUrl),
-    });
+    pool ??= new pg.Pool(poolConfig(databaseUrl));
     return (await pool.query(text, params)).rows as T[];
   }
   local ??= startLocal().catch((error: unknown) => {
