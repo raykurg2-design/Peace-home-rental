@@ -1,12 +1,11 @@
 import { OFFICE } from "@/lib/listings";
 
-export type SendResult = { sent: boolean; previewUrl?: string };
+export type SendResult = { sent: boolean };
 
 type MailInput = {
   to: string;
   subject: string;
   html: string;
-  previewUrl?: string;
 };
 
 async function sendMail(input: MailInput): Promise<SendResult> {
@@ -15,7 +14,7 @@ async function sendMail(input: MailInput): Promise<SendResult> {
     process.env.RESEND_FROM_EMAIL?.trim() || "Peace Home Rental <onboarding@resend.dev>";
 
   if (!apiKey) {
-    return { sent: false, previewUrl: input.previewUrl };
+    return { sent: false };
   }
 
   const res = await fetch("https://api.resend.com/emails", {
@@ -60,7 +59,6 @@ export async function sendVerificationEmail(input: {
   return sendMail({
     to: input.to,
     subject: "Verify your Peace Home Rental email",
-    previewUrl: input.verifyUrl,
     html: `
       <p>Hi ${escapeHtml(input.name)},</p>
       <p>Confirm your email to continue with ${escapeHtml(OFFICE.name)}.</p>
@@ -80,7 +78,6 @@ export async function sendSecurityCodeEmail(input: {
   return sendMail({
     to: input.to,
     subject: `Your ${OFFICE.name} security code`,
-    previewUrl: undefined,
     html: `
       <p>Hi ${escapeHtml(input.name)},</p>
       <p>Your 6-digit security code for ${escapeHtml(label)} is:</p>

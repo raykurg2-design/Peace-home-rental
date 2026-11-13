@@ -13,27 +13,14 @@ export function isAppleConfigured(): boolean {
   return appleClientId() !== "";
 }
 
-/**
- * Verifies a Sign in with Apple identity token against Apple's JWKS.
- * When APPLE_CLIENT_ID is unset (local/sample), accepts a sample token payload only if sampleMode is true.
- */
-export async function verifyAppleIdentityToken(
-  identityToken: string,
-  options?: { sampleMode?: boolean; sampleEmail?: string; sampleName?: string },
-): Promise<AppleIdentity> {
+/** Verifies a Sign in with Apple identity token against Apple's JWKS. Requires APPLE_CLIENT_ID. */
+export async function verifyAppleIdentityToken(identityToken: string): Promise<AppleIdentity> {
   const clientId = appleClientId();
-
   if (!clientId) {
-    if (!options?.sampleMode) {
-      throw new Error("Apple Sign In is not configured.");
-    }
-    // Local/sample path — never used when APPLE_CLIENT_ID is set.
-    const email = (options.sampleEmail || "apple.renter@example.com").toLowerCase();
-    return {
-      appleSub: `sample_apple_${Buffer.from(email).toString("hex").slice(0, 24)}`,
-      email,
-      emailVerified: true,
-    };
+    throw new Error("Apple Sign In is not configured.");
+  }
+  if (!identityToken.trim()) {
+    throw new Error("Apple identity token is required.");
   }
 
   const { payload } = await jwtVerify(identityToken, appleJwks, {

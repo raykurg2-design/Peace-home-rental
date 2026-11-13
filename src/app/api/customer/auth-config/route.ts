@@ -5,12 +5,12 @@ import { isAppleConfigured } from "@/lib/apple-auth";
 export const runtime = "nodejs";
 
 export async function GET() {
-  const clientId = appleClientId();
+  const configured = isAppleConfigured();
   return NextResponse.json({
     apple: {
-      enabled: isAppleConfigured(),
-      clientId: clientId || null,
-      sampleMode: !isAppleConfigured(),
+      enabled: configured,
+      // Client ID is required by Apple's JS SDK; it is a public OAuth client identifier.
+      clientId: configured ? appleClientId() : null,
     },
   });
 }

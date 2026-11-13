@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { CustomerPublic } from "@/lib/customer-client";
 
 type AuthConfig = {
-  apple: { enabled: boolean; clientId: string | null; sampleMode: boolean };
+  apple: { enabled: boolean; clientId: string | null };
 };
 
 declare global {
@@ -41,7 +41,7 @@ export function AppleSignInButton({
         if (!cancelled) setConfig(data);
       })
       .catch(() => {
-        if (!cancelled) setConfig({ apple: { enabled: false, clientId: null, sampleMode: true } });
+        if (!cancelled) setConfig({ apple: { enabled: false, clientId: null } });
       });
     return () => {
       cancelled = true;
@@ -67,19 +67,14 @@ export function AppleSignInButton({
     document.head.appendChild(script);
   }, [config]);
 
-  async function finish(identityToken: string, fullName?: string, sample = false) {
+  async function finish(identityToken: string, fullName?: string) {
     setBusy(true);
     try {
       const res = await fetch("/api/customer/apple", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          identityToken,
-          fullName,
-          sample,
-          sampleEmail: sample ? "apple.renter@example.com" : undefined,
-        }),
+        body: JSON.stringify({ identityToken, fullName }),
       });
       const data = (await res.json()) as { error?: string; customer?: CustomerPublic };
       if (!res.ok || !data.customer) {
@@ -98,8 +93,8 @@ export function AppleSignInButton({
     onError("");
     if (!config) return;
 
-    if (config.apple.sampleMode || !config.apple.enabled) {
-      await finish("sample", "Apple Renter", true);
+    if (!config.apple.enabled || !config.apple.clientId) {
+      onError("Apple Sign In is not configured yet. Use email login, or add APPLE_CLIENT_ID.");
       return;
     }
 
@@ -112,24 +107,32 @@ export function AppleSignInButton({
       const first = result.user?.name?.firstName ?? "";
       const last = result.user?.name?.lastName ?? "";
       const fullName = `${first} ${last}`.trim();
-      await finish(result.authorization.id_token, fullName || undefined, false);
+      await finish(result.authorization.id_token, fullName || undefined);
     } catch {
       onError("Apple Sign In was cancelled or failed.");
     }
   }
 
+  const ready = Boolean(config?.apple.enabled && config.apple.clientId);
+
   return (
-    <button
-      type="button"
-      disabled={busy || !config}
-      onClick={onClick}
-      className="flex w-full items-center justify-center gap-2 rounded-md bg-night px-5 py-3 text-sm font-semibold text-paper hover:bg-ink disabled:opacity-60"
-    >
-      <svg aria-hidden viewBox="0 0 24 24" className="size-4 fill-current">
-        <path d="M16.7 12.6c0-2.1 1.7-3.1 1.8-3.2-1-1.4-2.5-1.6-3-1.7-1.3-.1-2.5.8-3.1.8-.6 0-1.6-.7-2.7-.7-1.4 0-2.7.8-3.4 2.1-1.5 2.5-.4 6.2 1 8.2.7 1 1.5 2.1 2.6 2.1 1 0 1.4-.7 2.7-.7s1.6.7 2.7.7c1.1 0 1.8-1 2.5-2 .8-1.1 1.1-2.2 1.1-2.3-.1 0-2.1-.8-2.2-3.3zm-2-6.2c.6-.7 1-1.7.9-2.7-1 .1-2.1.7-2.7 1.4-.6.7-1.1 1.7-.9 2.6 1 .1 2-.5 2.7-1.3z" />
-      </svg>
-      {busy ? "Continuing…" : label}
-      {config?.apple.sampleMode ? " (sample)" : ""}
-    </button>
+    <div className="space-y-2">
+      <button
+        type="button"
+        disabled={busy || !config || !ready}
+        onClick={onClick}
+        className="flex w-full items-center justify-center gap-2 rounded-md bg-night px-5 py-3 text-sm font-semibold text-paper hover:bg-ink disabled:opacity-60"
+      >
+        <svg aria-hidden viewBox="0 0 24 24" className="size-4 fill-current">
+          <path d="M16.7 12.6c0-2.1 1.7-3.1 1.8-3.2-1-1.4-2.5-1.6-3-1.7-1.3-.1-2.5.8-3.1.8-.6 0-1.6-.7-2.7-.7-1.4 0-2.7.8-3.4 2.1-1.5 2.5-.4 6.2 1 8.2.7 1 1.5 2.1 2.6 2.1 1 0 1.4-.7 2.7-.7s1.6.7 2.7.7c1.1 0 1.8-1 2.5-2 .8-1.1 1.1-2.2 1.1-2.3-.1 0-2.1-.8-2.2-3.3zm-2-6.2c.6-.7 1-1.7.9-2.7-1 .1-2.1.7-2.7 1.4-.6.7-1.1 1.7-.9 2.6 1 .1 2-.5 2.7-1.3z" />
+        </svg>
+        {busy ? "Continuing…" : label}
+      </button>
+      {config && !ready ? (
+        <p className="text-xs text-ink-muted">
+          Apple Sign In appears here once APPLE_CLIENT_ID is configured for the app.
+        </p>
+      ) : null}
+    </div>
   );
 }

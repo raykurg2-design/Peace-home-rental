@@ -5,14 +5,9 @@ import {
   toPublic,
 } from "@/lib/customer-auth";
 import { sendVerificationEmail } from "@/lib/email";
+import { originFrom } from "@/lib/request-origin";
 
 export const runtime = "nodejs";
-
-function originFrom(request: Request): string {
-  const proto = request.headers.get("x-forwarded-proto") ?? "http";
-  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "127.0.0.1:3000";
-  return `${proto}://${host}`;
-}
 
 export async function POST(request: Request) {
   try {
@@ -32,9 +27,16 @@ export async function POST(request: Request) {
       verifyUrl,
     });
 
+    if (!mail.sent) {
+      return NextResponse.json(
+        { error: "Email delivery is not configured. Verification links cannot be sent yet." },
+        { status: 503 },
+      );
+    }
+
     return NextResponse.json({
       customer: toPublic(customer),
-      email: { sent: mail.sent, previewUrl: mail.previewUrl ?? null },
+      email: { sent: true },
     });
   } catch (error) {
     console.error("resend-verification failed", error);

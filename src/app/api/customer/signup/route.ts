@@ -4,6 +4,7 @@ import {
   createCustomer,
   createLoginChallenge,
   createSession,
+  invalidateLoginChallenge,
   SESSION_COOKIE,
   sessionCookieOptions,
   toPublic,
@@ -14,6 +15,7 @@ export const runtime = "nodejs";
 
 /**
  * Create account, then require a 6-digit email security code before the email is verified.
+ * Security codes are never returned in the API response.
  */
 export async function POST(request: Request) {
   try {
@@ -60,14 +62,22 @@ export async function POST(request: Request) {
       purpose: "signup",
     });
 
+    if (!mail.sent) {
+      await invalidateLoginChallenge(challengeId);
+      return NextResponse.json(
+        {
+          error: "Account created, but email delivery is not configured. Security codes cannot be sent yet.",
+          customer: toPublic(customer),
+        },
+        { status: 503 },
+      );
+    }
+
     const sessionId = await createSession(customer.id);
     const res = NextResponse.json({
       customer: toPublic(customer),
       challengeId,
-      email: {
-        sent: mail.sent,
-        previewCode: mail.sent ? null : code,
-      },
+      email: { sent: true },
     });
     res.cookies.set(SESSION_COOKIE, sessionId, sessionCookieOptions());
     return res;

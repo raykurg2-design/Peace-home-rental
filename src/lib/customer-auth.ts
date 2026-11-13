@@ -184,6 +184,12 @@ export async function createLoginChallenge(
   return { challengeId: id, code };
 }
 
+export async function invalidateLoginChallenge(challengeId: string): Promise<void> {
+  await sql(`update login_challenges set used_at = coalesce(used_at, now()) where id = $1`, [
+    challengeId,
+  ]);
+}
+
 export async function consumeLoginChallenge(
   challengeId: string,
   code: string,
