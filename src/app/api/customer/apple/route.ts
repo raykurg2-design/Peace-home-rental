@@ -12,6 +12,7 @@ import {
   toPublic,
 } from "@/lib/customer-auth";
 import { sendWelcomeEmail } from "@/lib/email";
+import { AUTH_LIMITS, authBucket, consumeRateLimit } from "@/lib/rate-limit";
 import { originFrom } from "@/lib/request-origin";
 
 export const runtime = "nodejs";
@@ -35,19 +36,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Apple identity token is required." }, { status: 400 });
     }
 
-    const identity = await verifyAppleIdentityToken(identityToken);
-
-    if (!identity.email) {
+    const rate = await consumeRateLimit(authBucket(request, "apple"), AUTH_LIMITS.apple);
+    if (!rate.allowed) {
       return NextResponse.json(
-        { error: "Apple did not share an email. Use email signup or allow email with Apple." },
-        { status: 400 },
+        { error: "Too many Apple Sign In attempts. Try again later." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
       );
     }
+
+    const identity = await verifyAppleIdentityToken(identityToken);
 
     let customer = await findCustomerByAppleSub(identity.appleSub);
     let created = false;
 
+    // Returning Apple users often get no email claim on later tokens — allow by apple_sub.
     if (!customer) {
+      if (!identity.email) {
+        return NextResponse.json(
+          {
+            error:
+              "Apple did not share an email. Use email signup or allow email with Apple on first sign-in.",
+          },
+          { status: 400 },
+        );
+      }
+      if (!identity.emailVerified) {
+        return NextResponse.json(
+          { error: "Apple email is not verified. Use email signup or a verified Apple account." },
+          { status: 400 },
+        );
+      }
+
       const byEmail = await findCustomerByEmail(identity.email);
       if (byEmail) {
         customer = await linkAppleSub(byEmail.id, identity.appleSub);

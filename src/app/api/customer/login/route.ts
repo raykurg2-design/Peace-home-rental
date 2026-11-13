@@ -7,6 +7,7 @@ import {
   verifyPassword,
 } from "@/lib/customer-auth";
 import { sendSecurityCodeEmail } from "@/lib/email";
+import { AUTH_LIMITS, authBucket, consumeRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,14 @@ export async function POST(request: Request) {
     const password = body.password ?? "";
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
+    }
+
+    const rate = await consumeRateLimit(authBucket(request, "login", email), AUTH_LIMITS.login);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Too many sign-in attempts. Try again later." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
+      );
     }
 
     const row = await findCustomerByEmail(email);
