@@ -17,6 +17,10 @@ const faqs = [
     a: "We confirm your email and contact details before tours or applications so the office can follow up with the right person. Open Account in the menu to get verified.",
   },
   {
+    q: "How do I log in?",
+    a: "Use Log in in the menu. Email login needs your password plus a 6-digit security code emailed to you. You can also create an account or sign in with Apple.",
+  },
+  {
     q: "Can I message the office in the app?",
     a: "Yes. After your email is verified, open Messages to start a conversation. Tour and application requests also open a thread so you can follow up with the office.",
   },

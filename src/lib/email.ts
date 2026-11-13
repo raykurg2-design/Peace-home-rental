@@ -70,6 +70,27 @@ export async function sendVerificationEmail(input: {
   });
 }
 
+export async function sendSecurityCodeEmail(input: {
+  to: string;
+  name: string;
+  code: string;
+  purpose: "login" | "signup";
+}): Promise<SendResult> {
+  const label = input.purpose === "login" ? "sign-in" : "account verification";
+  return sendMail({
+    to: input.to,
+    subject: `Your ${OFFICE.name} security code`,
+    previewUrl: undefined,
+    html: `
+      <p>Hi ${escapeHtml(input.name)},</p>
+      <p>Your 6-digit security code for ${escapeHtml(label)} is:</p>
+      <p style="font-size:28px;letter-spacing:0.2em;font-weight:700">${escapeHtml(input.code)}</p>
+      <p>This code expires in 10 minutes. If you did not request it, you can ignore this message.</p>
+      <p>— ${escapeHtml(OFFICE.name)}</p>
+    `,
+  });
+}
+
 export async function sendWelcomeEmail(input: {
   to: string;
   name: string;

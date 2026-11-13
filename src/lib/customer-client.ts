@@ -7,6 +7,7 @@ export type CustomerPublic = {
   phone: string | null;
   emailVerified: boolean;
   customerVerified: boolean;
+  authProvider?: string;
 };
 
 export async function fetchCustomer(): Promise<CustomerPublic | null> {
