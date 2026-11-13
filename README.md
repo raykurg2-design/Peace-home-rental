@@ -21,8 +21,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ## App features
 
 - **Customer site** (`/`): home, listings search, property detail, about, contact, apply
-- **Owner workspace** (`/owner`): overview, listings, inquiries, add/edit homes — separate shell and nav
+- **Owner workspace** (`/owner`): overview, listings, inquiries, add/edit homes — separate shell and nav, gated by Cursor sign-in (publish as private or team)
 - Progressive Web App (manifest + service worker) for Add to Home Screen
 - Brand styling matched to Peace Home Rental (forest / paper)
 
-Owner demo access code: `peace-owner` (footer link → Owner workspace).

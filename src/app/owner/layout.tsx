@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { OwnerGate } from "@/components/OwnerGate";
+import { OwnerShell } from "@/components/OwnerShell";
+import { OwnerUnauthorized } from "@/components/OwnerUnauthorized";
+import { getOwnerAccess } from "@/lib/owner-auth";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: {
@@ -12,6 +16,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function OwnerLayout({ children }: { children: React.ReactNode }) {
-  return <OwnerGate>{children}</OwnerGate>;
+export default async function OwnerLayout({ children }: { children: React.ReactNode }) {
+  const access = await getOwnerAccess();
+
+  if (!access.ok) {
+    return <OwnerUnauthorized />;
+  }
+
+  return (
+    <OwnerShell viewerName={access.identity.name} simulated={access.simulated}>
+      {children}
+    </OwnerShell>
+  );
 }

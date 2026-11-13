@@ -2,10 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
-import { useEffect, useState } from "react";
-import { isOwnerUnlocked, lockOwner } from "@/lib/owner-session";
+import { useState } from "react";
 import { OFFICE } from "@/lib/listings";
 
 const links = [
@@ -15,46 +14,17 @@ const links = [
   { href: "/owner/listings/new", label: "Add listing" },
 ];
 
-export function OwnerShell({ children }: { children: React.ReactNode }) {
+export function OwnerShell({
+  children,
+  viewerName,
+  simulated = false,
+}: {
+  children: React.ReactNode;
+  viewerName: string;
+  simulated?: boolean;
+}) {
   const pathname = usePathname();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [ready, setReady] = useState(false);
-  const [allowed, setAllowed] = useState(false);
-
-  useEffect(() => {
-    const ok = isOwnerUnlocked();
-    setAllowed(ok);
-    setReady(true);
-    if (!ok && pathname !== "/owner/login") {
-      router.replace(`/owner/login?next=${encodeURIComponent(pathname)}`);
-    }
-  }, [pathname, router]);
-
-  function signOut() {
-    lockOwner();
-    router.push("/owner/login");
-  }
-
-  if (!ready) {
-    return (
-      <div className="grid min-h-screen place-items-center bg-forest-deep text-paper/70">
-        Loading owner workspace…
-      </div>
-    );
-  }
-
-  if (!allowed && pathname !== "/owner/login") {
-    return (
-      <div className="grid min-h-screen place-items-center bg-forest-deep text-paper/70">
-        Redirecting to owner sign-in…
-      </div>
-    );
-  }
-
-  if (pathname === "/owner/login") {
-    return <div className="min-h-screen bg-paper">{children}</div>;
-  }
 
   return (
     <div className="flex min-h-screen flex-col bg-[#eef2ef]">
@@ -92,13 +62,9 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
             <Link href="/" className="text-sm text-paper/55 hover:text-paper">
               Customer site
             </Link>
-            <button
-              type="button"
-              onClick={signOut}
-              className="rounded-md bg-paper/10 px-3 py-1.5 text-sm text-paper hover:bg-paper/15"
-            >
-              Sign out
-            </button>
+            <span className="max-w-[10rem] truncate text-sm text-paper/50" title={viewerName}>
+              {viewerName || "Signed in"}
+            </span>
           </nav>
 
           <button
@@ -127,13 +93,18 @@ export function OwnerShell({ children }: { children: React.ReactNode }) {
               <Link href="/" className="py-1 text-base text-paper/70" onClick={() => setOpen(false)}>
                 Customer site
               </Link>
-              <button type="button" onClick={signOut} className="py-1 text-left text-base text-paper/70">
-                Sign out
-              </button>
+              <p className="py-1 text-sm text-paper/50">{viewerName || "Signed in"}</p>
             </nav>
           </div>
         ) : null}
       </header>
+
+      {simulated ? (
+        <div className="border-b border-amber-700/20 bg-amber-50 px-4 py-2 text-center text-xs text-amber-950 sm:px-6">
+          Local preview uses a simulated signed-in viewer. On the published private or team app, Cursor verifies who you
+          are.
+        </div>
+      ) : null}
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-10">{children}</main>
     </div>

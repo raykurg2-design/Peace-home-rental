@@ -59,7 +59,7 @@ export function SiteFooter() {
           <p>
             © {new Date().getFullYear()} {OFFICE.name}. Homes managed with care.
           </p>
-          <Link href="/owner/login" className="text-paper/40 hover:text-paper/70">
+          <Link href="/owner" className="text-paper/40 hover:text-paper/70">
             Owner workspace
           </Link>
         </div>
